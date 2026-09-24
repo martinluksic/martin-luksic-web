@@ -52,6 +52,8 @@
         setTimeout(() => {
             loader.classList.add('hidden');
             document.body.style.overflow = '';
+            // Activar scrollbar al mismo tiempo que termina el loader
+            document.documentElement.classList.add('scrollbar-ready');
         }, 1500);
     }
 
@@ -225,26 +227,51 @@
 
 
     // ============ EFECTO DE ESCRITURA (TYPING) ============
-    // Simula escritura tipo terminal en el hero
+    // Simula escritura tipo terminal en el hero, en dos fases secuenciales
     function initTypingEffect() {
         const typedElement = document.getElementById('typed-text');
         if (!typedElement) return;
 
-        const text = 'Ingeniero de Ejecución en Gestión Industrial';
-        let index = 0;
+        const titleCursor = typedElement.nextElementSibling; // .typing-cursor del título
 
-        // Esperar a que el loader termine
-        setTimeout(() => {
+        // Texto de la primera línea (título)
+        const titleText = 'Ingeniero y Técnico';
+
+        // Función genérica de tipeo con callback al terminar
+        function typeText(element, text, speed, onDone) {
+            let index = 0;
             function type() {
                 if (index < text.length) {
-                    typedElement.textContent += text.charAt(index);
+                    element.textContent += text.charAt(index);
                     index++;
-                    setTimeout(type, 40 + Math.random() * 30);
+                    setTimeout(type, speed + Math.random() * (speed * 0.6));
+                } else if (onDone) {
+                    onDone();
                 }
             }
             type();
-        }, 2300);
+        }
+
+        // Esperar a que el loader termine, luego encadenar tipeo + fadeUp
+        setTimeout(() => {
+
+            // FASE 1: tipear el título
+            typeText(typedElement, titleText, 40, () => {
+
+                // Al terminar el título: pequeña pausa y fadeUp de las especialidades
+                setTimeout(() => {
+                    if (titleCursor) titleCursor.style.display = 'none';
+
+                    const specialtiesContainer = document.querySelector('.hero-specialties');
+                    if (specialtiesContainer) specialtiesContainer.classList.add('typing-active');
+
+                }, 300); // pausa breve entre fases
+            });
+
+        }, 2300); // espera al loader
     }
+
+
 
 
     // ============ INTERSECTION OBSERVER (animaciones de entrada) ============
@@ -331,14 +358,56 @@
             }
 
             if (isValid && notification) {
-                // Mostrar notificación de integración pendiente
-                notification.classList.add('show');
-                notification.textContent = 'SYSTEM: Integración con backend pendiente. El mensaje no fue enviado a ningún servidor.';
+                const submitBtn = form.querySelector('.submit-btn');
+                const originalBtnText = submitBtn.textContent;
 
-                // Ocultar notificación después de 5 segundos
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 5000);
+                // Deshabilitar botón y mostrar estado
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Enviando...';
+                submitBtn.style.opacity = '0.7';
+                submitBtn.style.cursor = 'not-allowed';
+
+                notification.classList.remove('show');
+
+                // Parámetros para la plantilla de EmailJS
+                const templateParams = {
+                    name: nameInput.value.trim(),
+                    email: emailInput.value.trim(),
+                    message: messageInput.value.trim()
+                };
+
+                // Enviar usando EmailJS
+                emailjs.send('service_2wymkze', 'template_gjypynh', templateParams)
+                    .then(() => {
+                        // Éxito
+                        notification.textContent = 'Mensaje enviado correctamente';
+                        notification.style.color = 'var(--green-primary)';
+                        notification.classList.add('show');
+                        form.reset(); // Limpiar formulario
+                    })
+                    .catch((error) => {
+                        // Error de red o EmailJS
+                        console.error('Error al enviar el mensaje:', error);
+                        notification.textContent = 'Error al enviar mensaje';
+                        notification.style.color = '#ff3333'; // Rojo para error
+                        notification.classList.add('show');
+                    })
+                    .finally(() => {
+                        // Restaurar botón
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalBtnText;
+                        submitBtn.style.opacity = '1';
+                        submitBtn.style.cursor = 'pointer';
+
+                        // Ocultar notificación después de 5 segundos
+                        setTimeout(() => {
+                            notification.classList.remove('show');
+                            // Limpiar estilos en línea después de la transición
+                            setTimeout(() => {
+                                notification.style.color = '';
+                            }, 400);
+                        }, 5000);
+                    });
             }
         });
     }

@@ -46,7 +46,17 @@
 html {
     scroll-behavior: smooth;
     font-size: 16px;
+    /* Reserva el espacio de la scrollbar desde el inicio para evitar el salto visual */
+    scrollbar-gutter: stable;
+    /* Oculto durante el loader, se activa con clase JS al terminar */
+    overflow-y: hidden;
 }
+
+/* Clase añadida por JS tras el loader: activa scroll sin salto de contenido */
+html.scrollbar-ready {
+    overflow-y: scroll;
+}
+
 
 body {
     font-family: var(--font-mono);
@@ -65,7 +75,7 @@ body {
 
 /* Scrollbar personalizada */
 ::-webkit-scrollbar {
-    width: 6px;
+    width: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -74,11 +84,36 @@ body {
 
 ::-webkit-scrollbar-thumb {
     background: var(--green-dark);
-    border-radius: 3px;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 255, 102, 0.12);
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--green-primary);
+}
+
+/* Botones de flecha: arriba y abajo */
+::-webkit-scrollbar-button {
+    height: 14px;
+    background-color: var(--bg-secondary);
+    border: 1px solid rgba(0, 255, 102, 0.15);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 7px 7px;
+}
+
+::-webkit-scrollbar-button:hover {
+    background-color: var(--green-dark);
+}
+
+/* Flecha superior (▲) */
+::-webkit-scrollbar-button:single-button:vertical:decrement {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 2 L9 8 L1 8 Z' fill='%2300ff66'/%3E%3C/svg%3E");
+}
+
+/* Flecha inferior (▼) */
+::-webkit-scrollbar-button:single-button:vertical:increment {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 8 L9 2 L1 2 Z' fill='%2300ff66'/%3E%3C/svg%3E");
 }
 
 /* ============ EFECTO SCANLINE CRT (overlay global) ============ */
@@ -126,7 +161,7 @@ body::before {
     height: 100%;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.07;
+    opacity: 0.12;
 }
 
 /* ============ LOADER TERMINAL ============ */
@@ -384,35 +419,30 @@ nav.scrolled {
     max-width: 900px;
 }
 
-.hero-prefix {
-    font-size: 0.8rem;
-    letter-spacing: 6px;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeUp 0.8s ease 1.6s forwards;
-}
 
 .hero-name {
-    font-size: clamp(2.2rem, 6vw, 4.5rem);
+    font-size: clamp(1.6rem, 5.5vw, 3.2rem);
     font-weight: 700;
     color: var(--green-primary);
     letter-spacing: 4px;
     line-height: 1.1;
-    margin-bottom: 10px;
+    /* Centrado real: el elemento colapsa al ancho del texto y margin auto lo centra */
+    width: fit-content;
+    margin: 0 auto 14px;
     text-shadow: 0 0 20px var(--glow-green), 0 0 40px rgba(0, 255, 102, 0.1);
     opacity: 0;
     transform: translateY(30px);
     animation: fadeUp 1s ease 1.8s forwards;
+    /* Forzar una sola línea siempre, escala el tamaño en lugar de romper */
+    white-space: nowrap;
 }
 
+
 .hero-title-typed {
-    font-size: clamp(0.85rem, 2vw, 1.1rem);
+    font-size: clamp(1rem, 2.4vw, 1.5rem);
     color: var(--green-bright);
     letter-spacing: 3px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     min-height: 1.5em;
     opacity: 0;
     animation: fadeIn 0.5s ease 2.2s forwards;
@@ -442,14 +472,21 @@ nav.scrolled {
 }
 
 .hero-specialties {
-    font-size: 0.78rem;
+    font-size: clamp(0.85rem, 1.4vw, 1rem);
     color: var(--text-secondary);
     letter-spacing: 2px;
+    line-height: 1.7;
     margin-bottom: 40px;
+    /* Empieza invisible con desplazamiento, igual que los botones */
     opacity: 0;
     transform: translateY(15px);
-    animation: fadeUp 0.8s ease 2.6s forwards;
 }
+
+/* Clase añadida por JS cuando termina el tipeo del título */
+.hero-specialties.typing-active {
+    animation: fadeUp 0.8s ease forwards;
+}
+
 
 .hero-buttons {
     display: flex;
@@ -734,13 +771,13 @@ nav.scrolled {
 
 .profile-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
+    grid-template-columns: 1fr;
+    gap: 50px;
     align-items: start;
 }
 
 .profile-text {
-    max-width: var(--max-reading);
+    max-width: 100%;
 }
 
 .profile-text p {
@@ -797,7 +834,11 @@ nav.scrolled {
     margin-bottom: 12px;
     padding-left: 16px;
     border-left: 2px solid var(--green-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+
 
 .profile-card-body .stat-line span {
     color: var(--green-primary);
@@ -875,17 +916,17 @@ nav.scrolled {
 }
 
 .exp-company {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--green-bright);
     margin-bottom: 14px;
 }
 
 .exp-description {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    line-height: 1.8;
+    line-height: 1.85;
     margin-bottom: 14px;
-    max-width: var(--max-reading);
+    max-width: 100%;
 }
 
 .exp-tags {
@@ -978,6 +1019,22 @@ nav.scrolled {
     text-transform: uppercase;
 }
 
+/* Imagen real del proyecto: rellena el contenedor sin deformarse */
+.project-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+    display: block;
+    transition: transform 0.4s ease;
+    filter: brightness(0.85) saturate(0.9);
+}
+
+.project-card:hover .project-image img {
+    transform: scale(1.05);
+    filter: brightness(1) saturate(1);
+}
+
 .project-body {
     padding: 24px;
 }
@@ -990,9 +1047,9 @@ nav.scrolled {
 }
 
 .project-desc {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
-    line-height: 1.8;
+    line-height: 1.85;
     margin-bottom: 16px;
     max-width: var(--max-reading);
 }
@@ -1019,7 +1076,7 @@ nav.scrolled {
 }
 
 .project-links a {
-    font-size: 0.72rem;
+    font-size: 0.82rem;
     color: var(--green-primary);
     text-decoration: none;
     letter-spacing: 1px;
@@ -1080,7 +1137,7 @@ nav.scrolled {
 }
 
 .skill-category-name {
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     font-weight: 600;
     color: var(--green-primary);
     letter-spacing: 2px;
@@ -1095,8 +1152,8 @@ nav.scrolled {
 }
 
 .skill-tag {
-    font-size: 0.7rem;
-    padding: 6px 12px;
+    font-size: 0.78rem;
+    padding: 6px 14px;
     border: 1px solid var(--green-dark);
     color: var(--text-secondary);
     letter-spacing: 1px;
@@ -1122,6 +1179,179 @@ nav.scrolled {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 50px;
+}
+
+/* ---- Bloque principal: Formación Académica ---- */
+.education-primary {
+    margin-bottom: 60px;
+    padding: 40px;
+    background: linear-gradient(135deg, rgba(0, 255, 102, 0.04) 0%, rgba(0, 255, 102, 0.01) 100%);
+    border: 1px solid var(--border-green);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Línea decorativa superior */
+.education-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green-primary), transparent);
+}
+
+.edu-primary-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 36px;
+}
+
+.edu-primary-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: rgba(0, 255, 102, 0.08);
+    border: 1px solid rgba(0, 255, 102, 0.2);
+    color: var(--green-primary);
+    flex-shrink: 0;
+}
+
+.edu-primary-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--green-primary);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 0;
+    border: none;
+    padding: 0;
+}
+
+.edu-primary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.edu-primary-entry {
+    padding: 28px;
+    background: rgba(0, 255, 102, 0.03);
+    border: 1px solid rgba(0, 255, 102, 0.12);
+    border-radius: 8px;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.edu-primary-entry:hover {
+    border-color: var(--green-primary);
+    background: rgba(0, 255, 102, 0.06);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 255, 102, 0.08);
+}
+
+.edu-primary-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--bg-primary);
+    background: var(--green-primary);
+    border-radius: 4px;
+    margin-bottom: 16px;
+}
+
+.edu-primary-date {
+    font-size: 0.72rem;
+    color: var(--green-dark);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.edu-primary-date::before {
+    content: '[ ';
+    color: var(--text-secondary);
+}
+
+.edu-primary-date::after {
+    content: ' ]';
+    color: var(--text-secondary);
+}
+
+.edu-primary-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.edu-primary-institution {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--green-primary);
+    opacity: 0.8;
+}
+
+.edu-primary-institution svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+/* ---- Bloques secundarios: Cursos y Certificaciones ---- */
+.education-secondary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+/* Tarjeta unificada: ocupa el ancho completo */
+.edu-unified-card {
+    grid-column: 1 / -1;
+}
+
+/* Grid interno de 3 columnas para las entradas */
+.edu-entries-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0 40px;
+}
+
+/* En pantallas medianas: 2 columnas */
+@media (max-width: 900px) {
+    .edu-entries-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* En móvil: 1 columna */
+@media (max-width: 560px) {
+    .edu-entries-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.edu-secondary-card {
+    padding: 28px;
+    background: rgba(0, 255, 102, 0.015);
+    border: 1px solid rgba(0, 255, 102, 0.08);
+    border-radius: 8px;
+    transition: border-color var(--transition-fast);
+}
+
+.edu-secondary-card:hover {
+    border-color: rgba(0, 255, 102, 0.2);
 }
 
 .education-column h3 {
@@ -1172,9 +1402,60 @@ nav.scrolled {
 }
 
 .edu-institution {
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     color: var(--text-secondary);
 }
+
+/* ---- Links a certificados en línea ---- */
+.edu-cert-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: inherit; /* Hereda el verde del contenedor en lugar del morado del navegador */
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    /* Subrayado animado */
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-position: left bottom;
+    background-repeat: no-repeat;
+    transition: background-size var(--transition-fast), color var(--transition-fast);
+}
+
+.edu-cert-link:hover {
+    background-size: 100% 1px;
+}
+
+/* Ícono de enlace externo oculto por defecto */
+.edu-cert-icon {
+    display: inline-flex;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(1px) translateX(-4px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.edu-cert-link:hover .edu-cert-icon {
+    opacity: 0.85;
+    transform: translateY(-1px) translateX(0);
+}
+
+/* Variante sobre edu-primary-name (anchor reemplaza el div) */
+a.edu-primary-name {
+    display: inline-flex;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+a.edu-primary-name:hover {
+    color: var(--green-primary);
+}
+
 
 /* ============ SECCIÓN: CONTACTO ============ */
 .contact {
@@ -1235,7 +1516,7 @@ nav.scrolled {
 }
 
 .contact-list .contact-value {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
 }
 
@@ -1524,6 +1805,23 @@ footer {
 
     .education-columns {
         grid-template-columns: 1fr;
+    }
+
+    .education-primary {
+        padding: 24px;
+        margin-bottom: 40px;
+    }
+
+    .edu-primary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .education-secondary {
+        grid-template-columns: 1fr;
+    }
+
+    .edu-secondary-card {
+        padding: 20px;
     }
 
     .timeline {
