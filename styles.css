@@ -1377,10 +1377,6 @@ nav.scrolled {
     border-bottom-color: var(--border-green);
 }
 
-.edu-entry:last-child {
-    border-bottom: none;
-}
-
 .edu-date {
     font-size: 0.65rem;
     color: var(--green-dark);
