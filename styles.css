@@ -152,7 +152,7 @@ body::before {
     background-size: 100px 100px, 150px 150px, 200px 200px;
 }
 
-/* ============ CANVAS MATRIX RAIN (fondo del hero) ============ */
+/* ============ CANVAS MATRIX RAIN (fondo global) ============ */
 #matrix-canvas {
     position: fixed;
     top: 0;
@@ -161,7 +161,7 @@ body::before {
     height: 100%;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.12;
+    opacity: 0.75;
 }
 
 /* ============ LOADER TERMINAL ============ */
@@ -409,7 +409,8 @@ nav.scrolled {
     justify-content: center;
     position: relative;
     overflow: hidden;
-    background: var(--bg-primary);
+    /* Deja ver la lluvia y protege el contraste en la zona de lectura. */
+    background: radial-gradient(ellipse at center, rgba(2, 4, 3, 0.55), rgba(2, 4, 3, 0.08));
 }
 
 .hero-content {
@@ -764,7 +765,7 @@ nav.scrolled {
 
 /* ============ SECCIÓN: PERFIL PROFESIONAL ============ */
 .profile {
-    background: var(--bg-secondary);
+    background: rgba(6, 16, 8, 0.72);
     border-top: 1px solid var(--border-green);
     border-bottom: 1px solid var(--border-green);
 }
@@ -846,7 +847,7 @@ nav.scrolled {
 
 /* ============ SECCIÓN: EXPERIENCIA LABORAL ============ */
 .experience {
-    background: var(--bg-primary);
+    background: rgba(2, 4, 3, 0.6);
 }
 
 /* Timeline vertical */
@@ -952,7 +953,7 @@ nav.scrolled {
 
 /* ============ SECCIÓN: PROYECTOS TÉCNICOS ============ */
 .projects {
-    background: var(--bg-secondary);
+    background: rgba(6, 16, 8, 0.72);
     border-top: 1px solid var(--border-green);
     border-bottom: 1px solid var(--border-green);
 }
@@ -1096,7 +1097,7 @@ nav.scrolled {
 
 /* ============ SECCIÓN: COMPETENCIAS Y HABILIDADES ============ */
 .skills {
-    background: var(--bg-primary);
+    background: rgba(2, 4, 3, 0.6);
 }
 
 .skills-grid {
@@ -1170,7 +1171,7 @@ nav.scrolled {
 
 /* ============ SECCIÓN: FORMACIÓN Y CERTIFICACIONES ============ */
 .education {
-    background: var(--bg-secondary);
+    background: rgba(6, 16, 8, 0.72);
     border-top: 1px solid var(--border-green);
     border-bottom: 1px solid var(--border-green);
 }
@@ -1455,7 +1456,7 @@ a.edu-primary-name:hover {
 
 /* ============ SECCIÓN: CONTACTO ============ */
 .contact {
-    background: var(--bg-primary);
+    background: rgba(2, 4, 3, 0.6);
 }
 
 .contact-grid {
@@ -1663,6 +1664,8 @@ a.edu-primary-name:hover {
 
 /* ============ FOOTER ============ */
 footer {
+    position: relative;
+    z-index: 1;
     padding: 50px 40px;
     background: var(--bg-primary);
     border-top: 1px solid var(--border-green);
@@ -1878,10 +1881,6 @@ footer {
 
     .scroll-line {
         animation: none;
-    }
-
-    #matrix-canvas {
-        display: none;
     }
 
     body::after {

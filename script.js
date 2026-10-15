@@ -59,99 +59,178 @@
 
 
     // ============ MATRIX DIGITAL RAIN (canvas) ============
-    // Efecto discreto de lluvia de caracteres como fondo
+    // Columnas con profundidad fija: la lluvia cae sin acercarse al hacer scroll.
     function initMatrixRain() {
         const canvas = document.getElementById('matrix-canvas');
         if (!canvas) return;
 
-        // Respetar preferencia de movimiento reducido
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            canvas.style.display = 'none';
-            return;
-        }
-
         const ctx = canvas.getContext('2d');
-        let animationId;
+        if (!ctx) return;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF<>{}[]|/\\';
+        const settings = {
+            // Profundidad fija en unidades del mundo y fundidos entre capas.
+            near: 180, depth: 2200, nearFade: 240, farFade: 450,
+            focalLength: 680, fontSize: 14, rowSpacing: 19, maxFontSize: 53,
+            worldHeight: 2160, referenceHeight: 900,
+            // Densidad: 8 capas x 24 columnas; móvil dibuja una de cada dos.
+            layers: 8, columns: 24, mobileBreakpoint: 700,
+            desktopFPS: 60, mobileFPS: 30, desktopDPR: 1.75, mobileDPR: 1.5,
+            desktopPixels: 4000000, mobilePixels: 1500000,
+            // Caída en unidades/segundo; estelas, brillo y respuesta del mouse.
+            fallSpeed: 42, fallVariation: 40, minTrail: 12, trailVariation: 12,
+            brightness: 0.85, mouseRadius: 150, mouseBoost: 0.7, mouseSmoothing: 0.18
+        };
+        const pointer = { x: 0, y: 0, active: false, strength: 0 };
+        let width = 0;
+        let height = 0;
+        let mobile = false;
+        let rainTime = 0;
+        let animationId = null;
+        let lastTime = null;
+        let needsResize = false;
+        const wrap = (value, period) => ((value % period) + period) % period;
+        const smoothstep = (value) => {
+            const t = Math.max(0, Math.min(1, value));
+            return t * t * (3 - 2 * t);
+        };
+        // Semilla fija: sin regeneración aleatoria por fotograma, scroll o resize.
+        let seed = 731;
+        const random = () => ((seed = seed * 16807 % 2147483647) - 1) / 2147483646;
+        const streams = Array.from({ length: settings.layers * settings.columns }, (_, i) => {
+            const column = i % settings.columns;
+            const layer = Math.floor(i / settings.columns);
+            return {
+                column,
+                x: ((column + 0.2 + random() * 0.6) / settings.columns - 0.5) * 2.8,
+                z: (layer + random()) / settings.layers * settings.depth,
+                phase: random(),
+                speed: settings.fallSpeed + random() * settings.fallVariation,
+                length: settings.minTrail + Math.floor(random() * settings.trailVariation),
+                brightness: 0.65 + random() * 0.35,
+                brightHead: i % 7 === 0,
+                glyphs: Array.from({ length: 64 }, () => chars[Math.floor(random() * chars.length)])
+            };
+        });
 
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            // Medidas CSS reales: la scrollbar no desplaza el punto de fuga ni el mouse.
+            const bounds = canvas.getBoundingClientRect();
+            width = bounds.width;
+            height = bounds.height;
+            mobile = width < settings.mobileBreakpoint;
+            const pixelBudget = mobile ? settings.mobilePixels : settings.desktopPixels;
+            const scale = Math.min(window.devicePixelRatio || 1,
+                mobile ? settings.mobileDPR : settings.desktopDPR,
+                Math.sqrt(pixelBudget / Math.max(1, width * height)));
+            canvas.width = Math.round(width * scale);
+            canvas.height = Math.round(height * scale);
+            ctx.setTransform(scale, 0, 0, scale, 0, 0);
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+            needsResize = false;
         }
 
-        resizeCanvas();
-
-        // Caracteres para la lluvia (mezcla de katakana, números y símbolos)
-        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF<>{}[]|/\\';
-        const charArray = chars.split('');
-
-        // Configuración de columnas
-        const fontSize = 14;
-        let columns = Math.floor(canvas.width / fontSize);
-        let drops = new Array(columns).fill(1);
-
-        // Velocidades aleatorias para cada columna
-        let speeds = [];
-        for (let i = 0; i < columns; i++) {
-            speeds.push(0.3 + Math.random() * 0.7);
-            drops[i] = Math.random() * -100;
-        }
-
-        function draw() {
-            // Fondo semitransparente para efecto de desvanecimiento
-            ctx.fillStyle = 'rgba(2, 4, 3, 0.06)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#00ff66';
-            ctx.font = fontSize + 'px monospace';
-
-            for (let i = 0; i < drops.length; i++) {
-                // Selección aleatoria de carácter
-                const text = charArray[Math.floor(Math.random() * charArray.length)];
-                const x = i * fontSize;
-                const y = drops[i] * fontSize;
-
-                // Variar la opacidad entre columnas
-                ctx.globalAlpha = 0.15 + Math.random() * 0.2;
-                ctx.fillText(text, x, y);
-                ctx.globalAlpha = 1;
-
-                // Reiniciar columna cuando sale de pantalla
-                if (y > canvas.height && Math.random() > 0.975) {
-                    drops[i] = 0;
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+            const fallTime = reducedMotion.matches ? 0 : rainTime;
+            const centerX = width * 0.5;
+            const centerY = height * 0.46;
+            const verticalScale = height / settings.referenceHeight;
+            for (const stream of streams) {
+                if (mobile && stream.column % 2) continue;
+                const z = settings.near + stream.z;
+                const perspective = settings.focalLength / z;
+                const size = settings.fontSize * perspective;
+                const fade = smoothstep((z - settings.near) / settings.nearFade)
+                    * smoothstep((settings.near + settings.depth - z) / settings.farFade);
+                if (fade < 0.005 || size > settings.maxFontSize) continue;
+                const x = centerX + stream.x * width * 0.8 * perspective;
+                if (x < -size || x > width + size) continue;
+                const period = settings.worldHeight + stream.length * settings.rowSpacing;
+                const head = wrap(stream.phase * period + fallTime * stream.speed, period) - settings.worldHeight / 2;
+                const headRow = Math.floor(head / settings.rowSpacing);
+                const depthBrightness = 0.3 + 0.7 * (1 - (z - settings.near) / settings.depth);
+                ctx.font = `${Math.round(size * 2) / 2}px monospace`;
+                for (let age = stream.length - 1; age >= 0; age--) {
+                    const row = headRow - age;
+                    const y = centerY + row * settings.rowSpacing * perspective * verticalScale;
+                    if (y < -size || y > height + size) continue;
+                    const distance = Math.hypot(x - pointer.x, y - pointer.y);
+                    const glow = smoothstep(1 - distance / settings.mouseRadius) * pointer.strength;
+                    const trail = Math.pow(1 - age / stream.length, 1.5);
+                    const isHead = age === 0;
+                    const baseAlpha = isHead ? (stream.brightHead ? 0.95 : 0.72) : 0.12 + trail * 0.55;
+                    ctx.globalAlpha = fade * Math.min(0.95, baseAlpha * stream.brightness * depthBrightness
+                        * settings.brightness + glow * settings.mouseBoost);
+                    ctx.fillStyle = isHead && stream.brightHead ? '#9affc1' : '#00ff66';
+                    // Brillo por glifo; no filtros ni superficies verdes sobre el contenido.
+                    ctx.shadowColor = '#00ff66';
+                    ctx.shadowBlur = glow > 0.02 ? 3 + glow * 9 : (isHead && stream.brightHead && z < 1200 ? 4 : 0);
+                    ctx.fillText(stream.glyphs[wrap(row, 64)], x, y);
                 }
-
-                drops[i] += speeds[i];
             }
-
-            animationId = requestAnimationFrame(draw);
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
         }
 
-        draw();
+        function tick(time) {
+            animationId = null;
+            if (document.hidden || reducedMotion.matches) return;
+            if (lastTime === null) lastTime = time;
+            const elapsed = time - lastTime;
+            const frameInterval = 1000 / (mobile ? settings.mobileFPS : settings.desktopFPS);
+            if (elapsed >= frameInterval - 0.5) {
+                if (needsResize) resizeCanvas();
+                const dt = Math.min(elapsed / 1000, 0.1);
+                lastTime = time;
+                const target = pointer.active ? 1 : 0;
+                pointer.strength += (target - pointer.strength) * (1 - Math.exp(-dt / settings.mouseSmoothing));
+                rainTime += dt;
+                render();
+            }
+            animationId = requestAnimationFrame(tick);
+        }
 
-        // Recalcular al cambiar el tamaño de ventana
-        let resizeTimeout;
+        function syncAnimation() {
+            if (animationId !== null) cancelAnimationFrame(animationId);
+            animationId = null;
+            lastTime = null;
+            pointer.active = false;
+            pointer.strength = 0;
+            if (!document.hidden) {
+                if (needsResize) resizeCanvas();
+                render();
+                if (!reducedMotion.matches) animationId = requestAnimationFrame(tick);
+            }
+        }
+
+        window.addEventListener('pointermove', (event) => {
+            if (event.pointerType !== 'mouse' || reducedMotion.matches || document.hidden) return;
+            pointer.x = event.clientX;
+            pointer.y = event.clientY;
+            pointer.active = true;
+        }, { passive: true });
+        const releasePointer = () => { pointer.active = false; };
+        window.addEventListener('pointerout', (event) => {
+            if (!event.relatedTarget) releasePointer();
+        }, { passive: true });
+        window.addEventListener('blur', releasePointer);
+        window.addEventListener('pointercancel', releasePointer, { passive: true });
+
         window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
+            needsResize = true;
+            // El ciclo existente coordina resize y dibujo. En modo estático,
+            // actualizar una sola imagen no debe iniciar una animación.
+            if (reducedMotion.matches && !document.hidden) {
                 resizeCanvas();
-                columns = Math.floor(canvas.width / fontSize);
-                drops = new Array(columns).fill(1);
-                speeds = [];
-                for (let i = 0; i < columns; i++) {
-                    speeds.push(0.3 + Math.random() * 0.7);
-                    drops[i] = Math.random() * -100;
-                }
-            }, 200);
-        });
-
-        // Pausar la animación cuando la pestaña no está visible (ahorro de recursos)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                cancelAnimationFrame(animationId);
-            } else {
-                draw();
+                render();
             }
-        });
+        }, { passive: true });
+        document.addEventListener('visibilitychange', syncAnimation);
+        reducedMotion.addEventListener('change', syncAnimation);
+        resizeCanvas();
+        syncAnimation();
     }
 
 
