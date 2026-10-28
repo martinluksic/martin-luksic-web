@@ -1,17 +1,17 @@
-﻿# 🌐 Martin Luksic — Sitio Web Personal
+﻿# Martin Luksic — Sitio Web Personal
 
 Sitio web personal desarrollado como **proyecto de aprendizaje**, con el doble propósito de servir como portfolio/curriculum online y explorar el proceso completo de publicar un sitio en internet.
 
 ---
 
-## 🎯 Objetivos del proyecto
+## Objetivos del proyecto
 
 - **Portfolio online**: Mostrar experiencia, proyectos y habilidades en un formato accesible desde cualquier lugar, para incluir el link en el CV.
 - **Aprender hosting web**: Entender el proceso completo de llevar un sitio desde el desarrollo local hasta producción en internet (dominio, hosting, despliegue, etc.).
 
 ---
 
-## 🛠️ Tecnologías usadas
+## Tecnologías usadas
 
 - **HTML** — Estructura del sitio
 - **CSS** — Estilos y diseño visual
@@ -21,7 +21,7 @@ Sin frameworks ni dependencias externas. Todo vanilla para mantenerlo simple y a
 
 ---
 
-## 🚀 Despliegue
+## Despliegue
 
 Este proyecto explora el proceso de publicar un sitio web, lo que incluye:
 
@@ -32,7 +32,7 @@ Este proyecto explora el proceso de publicar un sitio web, lo que incluye:
 
 ---
 
-## 📁 Estructura del proyecto
+## Estructura del proyecto
 
 ```
 martin-luksic-web/
@@ -44,7 +44,7 @@ martin-luksic-web/
 
 ---
 
-## 📚 Aprendizajes esperados
+## Aprendizajes esperados
 
 - Cómo funciona el hosting web estático
 - Diferencias entre servicios de hosting gratuitos y de pago
